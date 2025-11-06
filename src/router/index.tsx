@@ -9,12 +9,13 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 
 // App
-const DashboardPage = () => <div>Dashboard Page</div>;
-const CalendarPage = () => <div>Calendar Page</div>;
-const CommunicationPage = () => <div>Communication Page</div>;
-const DocumentsPage = () => <div>Documents Page</div>;
-const TeamPage = () => <div>Team Page</div>;
-const ProfilePage = () => <div>Profile Page</div>;
+// src/router/index.tsx (top of file)
+import DashboardPage from "@/pages/app/DashboardPage";
+import CalendarPage from "@/pages/app/CalendarPage";
+import CommunicationPage from "@/pages/app/CommunicationPage";
+import DocumentsPage from "@/pages/app/DocumentsPage";
+import TeamPage from "@/pages/app/TeamPage";
+import ProfilePage from "@/pages/app/ProfilePage";
 
 // Admin
 import AdminPage from '@/pages/admin/AdminPage'; // <-- add this
