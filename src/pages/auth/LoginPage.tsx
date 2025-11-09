@@ -74,9 +74,15 @@ const LoginPage = () => {
           type="password"
           {...register('password')}
         />
-        {errors.password && (
-          <p className="text-red-500 text-sm">{errors.password.message}</p>
+        {apiError && (
+          <div className="text-red-500 text-sm p-3 bg-red-50 rounded break-words">
+            {apiError.response?.data?.detail
+              || apiError.response?.statusText
+              || apiError.message
+              || "An unknown error occurred."}
+          </div>
         )}
+
       </div>
 
       <Button type="submit" className="w-full" disabled={isPending}>

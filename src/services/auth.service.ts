@@ -7,31 +7,25 @@ import { z } from 'zod';
 type LoginPayload = z.infer<typeof LoginSchema>;
 type RegisterPayload = z.infer<typeof RegisterSchema>;
 type PasswordChangePayload = z.infer<typeof PasswordChangeSchema>;
-
+// auth.service.ts
 const login = async (credentials: LoginPayload): Promise<AuthResponse> => {
-  const { data } = await api.post('/users/auth/login/', credentials);
+  const { data } = await api.post('users/auth/login/', credentials);
   return data;
 };
-
 const register = async (userData: RegisterPayload): Promise<CustomUser> => {
-  const { data } = await api.post('/users/auth/register/', userData);
+  const { data } = await api.post('users/auth/register/', userData);
   return data;
 };
-
-// Be tolerant: if refreshToken is missing/empty, skip server call.
 const logout = async (refreshToken?: string): Promise<void> => {
   if (!refreshToken) return;
-  await api.post('/users/auth/logout/', { refresh: refreshToken });
+  await api.post('users/auth/logout/', { refresh: refreshToken });
 };
-
 const getProfile = async (): Promise<CustomUser> => {
-  const { data } = await api.get('/users/me/');
+  const { data } = await api.get('users/me/');
   return data;
 };
-
 const changePassword = async (passwords: PasswordChangePayload): Promise<void> => {
-  // Your backend view uses `UserProfileSerializer` and expects `password`.
-  await api.put('/users/auth/password/change/', {
+  await api.put('users/auth/password/change/', {  // fixed
     password: passwords.new_password,
   });
 };

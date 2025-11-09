@@ -45,11 +45,16 @@ export interface TeamMember {
 export interface Team {
   id: number;
   name: string;
-  club_crest: string | null; // URL
-  head_coach: number | null; // ID of the coach
-  head_coach_name: string;
-  head_coach_email: string;
-  established_date: string | null; // ISO date string
+  club_crest: string | null;          // URL
+  head_coach: number | null;          // user id
+  head_coach_name: string | null;     // can be null if unset
+  head_coach_email: string | null;    // can be null if unset
+
+  owner: number | null;               // NEW: user id (STAFF/ADMIN)
+  owner_name: string | null;          // NEW
+  owner_email: string | null;         // NEW
+
+  established_date: string | null;    // ISO date string
   location: string | null;
   created_at: string;
   updated_at: string;
@@ -65,7 +70,6 @@ export interface TeamStaff {
   id: number;
   name: string;
   staff: TeamMember[];
-}
 
 // ===================
 // DOCUMENTS

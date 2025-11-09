@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, useAuthUser } from '@/stores/auth.store';
 
 // Forbid authenticated users from seeing pages like Login/Register
@@ -28,3 +28,5 @@ export const AdminGuard = ({ children }: { children: React.ReactElement }) => {
   }
   return children;
 };
+
+

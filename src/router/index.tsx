@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthGuard, GuestGuard } from './guards';
-import { AdminGuard } from './guards'; // <-- add this
+import { AdminGuard } from './guards';
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 
@@ -19,6 +19,13 @@ import ProfilePage from "@/pages/app/ProfilePage";
 
 // Admin
 import AdminPage from '@/pages/admin/AdminPage'; // <-- add this
+import AdminUsersListPage from "@/pages/admin/AdminUsersListPage";
+import AdminUserNewPage from "@/pages/admin/AdminUserNewPage";
+import AdminTeamsListPage from "@/pages/admin/AdminTeamsListPage";
+import AdminTeamNewPage from "@/pages/admin/AdminTeamNewPage";
+import AdminUserDetailPage from "@/pages/admin/AdminUserDetailPage";
+import AdminTeamDetailPage from "@/pages/admin/AdminTeamDetailPage";
+import LineupBuilderPage from "@/pages/app/LineupBuilderPage";
 
 const NotFoundPage = () => <div>404 Not Found</div>;
 
@@ -51,6 +58,7 @@ export const AppRouter = () => {
         <Route path="/app/documents" element={<DocumentsPage />} />
         <Route path="/app/team" element={<TeamPage />} />
         <Route path="/app/profile" element={<ProfilePage />} />
+        <Route path="/app/lineup" element={<LineupBuilderPage />} />
 
         {/* Admin-only route */}
         <Route
@@ -61,7 +69,26 @@ export const AppRouter = () => {
             </AdminGuard>
           }
         />
-
+        <Route path="/app/admin/users" element={
+          <AdminGuard><AdminUsersListPage /></AdminGuard>
+        }/>
+        <Route path="/app/admin/users/new" element={
+          <AdminGuard><AdminUserNewPage /></AdminGuard>
+        }/>
+        <Route path="/app/admin/teams" element={
+          <AdminGuard><AdminTeamsListPage /></AdminGuard>
+        }/>
+        <Route path="/app/admin/teams/new" element={
+          <AdminGuard><AdminTeamNewPage /></AdminGuard>
+        }/>
+        <Route path="/app/admin/users/:id" element={
+          <AdminGuard><AdminUserDetailPage /></AdminGuard>
+        }/>
+        <Route path="/app/admin/teams/:id" element={
+          <AdminGuard><AdminTeamDetailPage /></AdminGuard>
+        }/>
+        
+        
         {/* Default app route */}
         <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
       </Route>

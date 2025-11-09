@@ -2,33 +2,33 @@ import { useAuthStore } from '@/stores/auth.store';
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // add the trailing slash
+  baseURL: import.meta.env.VITE_API_BASE_URL.replace(/\/?$/, '/'), // ensures trailing /
 });
 
-// Request Interceptor: Add the access token to every request
+// Always send JSON
+api.defaults.headers.post['Content-Type'] = 'application/json';
+
+// Request Interceptor
 api.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle token expiry
-// **NOTE:** This is where we would handle token refresh.
-// Since no refresh endpoint was provided, we'll just log the user out on a 401.
+// Response Interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token is invalid or expired.
-      // Log the user out.
+    // if we truly have no response, it's a CORS / network error — bubble it up
+    if (!error.response) return Promise.reject(error);
+
+    if (error.response.status === 401) {
       useAuthStore.getState().actions.logout();
-      // Reload to clear all state and redirect to login
-      window.location.href = '/login'; 
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

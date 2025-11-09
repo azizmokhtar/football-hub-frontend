@@ -15,8 +15,8 @@ export default function AdminPage() {
             Create teams and manage their details.
           </p>
           <div className="flex gap-2">
-            <Button>New Team</Button>
-            <Button variant="secondary">View All</Button>
+            <Button asChild><a href="/app/admin/teams/new">New Team</a></Button>
+            <Button variant="secondary" asChild><a href="/app/admin/teams">View All</a></Button>
           </div>
         </Card>
 
@@ -26,8 +26,9 @@ export default function AdminPage() {
             Add users and assign them to teams with roles and positions.
           </p>
           <div className="flex gap-2">
-            <Button variant="destructive">New User</Button>
-            <Button variant="secondary">View All</Button>
+            
+            <Button variant="destructive" asChild><a href="/app/admin/users/new">New User</a></Button>
+            <Button variant="secondary" asChild><a href="/app/admin/users">View All</a></Button>
           </div>
         </Card>
       </section>

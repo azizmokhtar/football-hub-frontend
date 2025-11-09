@@ -83,9 +83,22 @@ export default function DashboardPage() {
             {announcements?.slice(0, 5).map((a) => (
               <div key={a.id} className="rounded-lg border border-gray-100 p-3">
                 <div className="text-sm font-medium">{a.title}</div>
-                <div className="text-xs text-gray-500">
-                  {format(new Date(a.timestamp), "dd MMM HH:mm")} • {a.team_name}
+                <div className="text-xs text-gray-500 flex items-center gap-2">
+                  <span>{format(new Date(a.timestamp), "dd MMM HH:mm")}</span>
+                  <span>•</span>
+                  <span>{a.team_name}</span>
+                  <span>•</span>
+                  <span>by <span className="font-medium">{a.sender_name ?? "System"}</span></span>
+                  {a.is_urgent && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700">
+                        URGENT
+                      </span>
+                    </>
+                  )}
                 </div>
+
                 <p className="mt-1 text-sm text-gray-700 line-clamp-2">{a.content}</p>
               </div>
             )) ?? <div className="text-sm text-gray-500">No announcements.</div>}
