@@ -1,5 +1,5 @@
 // src/pages/admin/AdminUserDetailPage.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Page, Card } from "@/components/ui/Page";
@@ -7,39 +7,29 @@ import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import FieldError from "@/components/FieldError";
+
 import { usersService } from "@/services/users.service";
 import { teamsService } from "@/services/teams.service";
-import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { profilesService } from "@/services/profiles.service";
 
 import { normalizeApiErrors, type ApiErrors } from "@/utils/api-errors";
-import type { CustomUser, Team, UserPosition, UserRole } from "@/types";
+import type { CustomUser, UserRole, Position, Team } from "@/types";
 
 const ROLE_OPTIONS: UserRole[] = ["PLAYER", "COACH", "STAFF", "ADMIN"];
-const POSITIONS: (UserPosition | "")[] = ["", "GK", "DF", "MF", "FW"];
 
 export default function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
   const nav = useNavigate();
 
-  // Fetch user
+  // --- User (basic info) ---
   const { data: user, isLoading } = useQuery({
     queryKey: ["admin-user", userId],
     queryFn: () => usersService.getUser(userId),
     enabled: Number.isFinite(userId),
   });
 
-  // Fetch teams (for dropdown)
-  const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ["teams-all"],
-    queryFn: () => teamsService.listAll(),
-  });
-
-  const [form, setForm] = useState<Partial<CustomUser> & {
-    team?: number | null;
-    date_of_birth?: string | null;
-  }>({});
-
+  const [form, setForm] = useState<Partial<CustomUser> & { date_of_birth?: string | null }>({});
   const [errors, setErrors] = useState<ApiErrors>({});
 
   useEffect(() => {
@@ -47,57 +37,19 @@ export default function AdminUserDetailPage() {
       setForm({
         first_name: user.first_name,
         last_name: user.last_name,
-        email: user.email, // read-only in UI
+        email: user.email,
         role: user.role,
-        team: user.team ?? null,
-        date_of_birth: user.date_of_birth,
-        jersey_number: user.jersey_number,
-        position: user.position,
         profile_picture: user.profile_picture,
       });
     }
   }, [user]);
 
-  // --- Searchable Team Dropdown state ---
-  // no local open/query state needed anymore
-
-  const selectedTeam = useMemo(
-    () => teams.find(t => t.id === (form.team ?? undefined)) ?? null,
-    [teams, form.team]
-  );
-
-  // Adapter the SearchableSelect expects: async (q) => Option[]
-  const fetchTeamOptions = React.useCallback(async (q: string) => {
-    // We already have all teams from React Query; filter locally.
-    const needle = q.trim().toLowerCase();
-    const list = !needle
-      ? teams
-      : teams.filter(t =>
-          t.name.toLowerCase().includes(needle) ||
-          String(t.id).includes(needle) ||
-          (t.location ?? "").toLowerCase().includes(needle)
-        );
-
-    return list.map(t => ({
-      value: t.id,
-      label: t.name,
-      sub: `ID ${t.id}${t.location ? ` • ${t.location}` : ""}`,
-    }));
-  }, [teams]);
-
-
-
-  // Save
   const { mutate: save, isPending } = useMutation({
     mutationFn: async () => {
-      const patch: Partial<CustomUser> & { team?: number | null } = {
+      const patch = {
         first_name: form.first_name ?? "",
         last_name: form.last_name ?? "",
         role: form.role as UserRole,
-        team: form.team ?? null, // writable for admin (see backend note below)
-        date_of_birth: form.date_of_birth ?? null,
-        jersey_number: form.role === "PLAYER" ? (form.jersey_number ?? null) : null,
-        position: form.role === "PLAYER" ? ((form.position as any) ?? null) : null,
       };
       return usersService.updateUser(userId, patch);
     },
@@ -105,10 +57,54 @@ export default function AdminUserDetailPage() {
       setErrors({});
       nav("/app/admin/users");
     },
-    onError: (err: any) => {
-      const data = err?.response?.data ?? err;
-      setErrors(normalizeApiErrors(data));
+    onError: (err: any) => setErrors(normalizeApiErrors(err?.response?.data ?? err)),
+  });
+
+  // --- Membership editor (team-scoped fields) ---
+  // We let the admin pick which team membership to edit, then set primary_position / jersey_number.
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams-all"],
+    queryFn: () => teamsService.listAll(),
+  });
+
+  const { data: positions = [], isLoading: posLoading } = useQuery({
+    queryKey: ["profiles-positions"],
+    queryFn: () => profilesService.listPositions(),
+    staleTime: 60_000,
+  });
+
+  // Group positions by line for a nicer <select>
+  const groupedPositions = React.useMemo(() => {
+    const map = new Map<Position["line"], Position[]>();
+    positions.forEach((p) => {
+      map.set(p.line, [...(map.get(p.line) ?? []), p]);
+    });
+    const order: Position["line"][] = ["GK", "DF", "MF", "FW"];
+    return order
+      .filter((line) => map.has(line))
+      .map((line) => [line, (map.get(line) ?? []).sort((a, b) => a.name.localeCompare(b.name))] as const);
+  }, [positions]);
+
+  const [membership, setMembership] = useState<{
+    teamId: number | "";
+    primaryPositionId: number | "";// Position.id
+    jerseyNumber: number | "";// optional
+  }>({ teamId: "", primaryPositionId: "", jerseyNumber: "" });
+
+  const { mutate: saveMembership, isPending: savingMembership } = useMutation({
+    mutationFn: async () => {
+      if (!membership.teamId) throw new Error("Please choose a team.");
+      return teamsService.updateMember(Number(membership.teamId), {
+        user_id: userId,
+        primary_position: membership.primaryPositionId ? Number(membership.primaryPositionId) : null,
+        jersey_number: membership.jerseyNumber === "" ? null : Number(membership.jerseyNumber),
+      });
     },
+    onSuccess: () => {
+      // Optional: toast / small success UI — here we just clear field-level errors
+      setErrors({});
+    },
+    onError: (err: any) => setErrors(normalizeApiErrors(err?.response?.data ?? err)),
   });
 
   if (isLoading || !user) {
@@ -119,16 +115,11 @@ export default function AdminUserDetailPage() {
     );
   }
 
-  const isPlayer = (form.role ?? user.role) === "PLAYER";
-
   return (
-    <Page
-      title={`${user.first_name} ${user.last_name}`}
-      subtitle={`ID #${user.id} • ${user.email}`}
-    >
+    <Page title={`${user.first_name} ${user.last_name}`} subtitle={`ID #${user.id} • ${user.email}`}>
+      {/* --- Basic profile card --- */}
       <Card className="space-y-6">
         <FieldError messages={errors["detail"] || errors["non_field_errors"]} />
-
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="fn">First name</Label>
@@ -164,25 +155,12 @@ export default function AdminUserDetailPage() {
               value={form.role ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as UserRole }))}
             >
-              {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+              {ROLE_OPTIONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
             </select>
             <FieldError messages={errors["role"]} />
           </div>
-
-          <div>
-            <Label>Team</Label>
-            <SearchableSelect
-              value={form.team ?? null}
-              onChange={(v) => setForm(f => ({ ...f, team: v ? Number(v) : null }))}
-              fetchOptions={fetchTeamOptions}
-              placeholder={
-                selectedTeam ? `${selectedTeam.name} (ID ${selectedTeam.id})` : "Select a team…"
-              }
-              headLabel="Search by name, ID or location"
-            />
-            <FieldError messages={errors["team"]} />
-          </div>
-            
 
           <div>
             <Label htmlFor="dob">Date of birth (YYYY-MM-DD)</Label>
@@ -194,47 +172,99 @@ export default function AdminUserDetailPage() {
             />
             <FieldError messages={errors["date_of_birth"]} />
           </div>
-
-          {/* Only for players */}
-          {isPlayer && (
-            <>
-              <div>
-                <Label htmlFor="jersey">Jersey number</Label>
-                <Input
-                  id="jersey"
-                  type="number"
-                  value={form.jersey_number ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      jersey_number: e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                />
-                <FieldError messages={errors["jersey_number"]} />
-              </div>
-
-              <div>
-                <Label htmlFor="pos">Position</Label>
-                <select
-                  id="pos"
-                  className="mt-1 block w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
-                  value={form.position ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, position: (e.target.value || null) as UserPosition | null }))
-                  }
-                >
-                  {POSITIONS.map(p => <option key={p || "none"} value={p}>{p || "—"}</option>)}
-                </select>
-                <FieldError messages={errors["position"]} />
-              </div>
-            </>
-          )}
         </div>
 
         <div className="flex gap-2">
           <Button disabled={isPending} onClick={() => save()}>Save changes</Button>
           <Button variant="secondary" onClick={() => nav(-1)}>Cancel</Button>
+        </div>
+      </Card>
+
+      {/* --- Membership (Team-scoped) card --- */}
+      <Card className="mt-6 space-y-4">
+        <div className="text-lg font-semibold">Membership (team-scoped)</div>
+        <p className="text-sm text-gray-600">
+          Edit fields that live on the team membership: <em>primary position</em> and <em>jersey number</em>.
+          Pick the team first (if this user has multiple memberships or you’re reassigning).
+        </p>
+
+        <div className="grid sm:grid-cols-3 gap-4">
+          {/* Team selection */}
+          <div>
+            <Label>Team</Label>
+            <select
+              className="mt-1 block w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+              value={membership.teamId}
+              onChange={(e) => setMembership((m) => ({ ...m, teamId: e.target.value ? Number(e.target.value) : "" }))}
+            >
+              <option value="">Select a team…</option>
+              {teams.map((t: Team) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} {t.location ? `• ${t.location}` : ""}
+                </option>
+              ))}
+            </select>
+            <FieldError messages={errors["team"]} />
+          </div>
+
+          {/* Primary position (from profiles.positions) */}
+          <div>
+            <Label>Primary position</Label>
+            <select
+              className="mt-1 block w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+              value={membership.primaryPositionId}
+              onChange={(e) =>
+                setMembership((m) => ({ ...m, primaryPositionId: e.target.value ? Number(e.target.value) : "" }))
+              }
+              disabled={posLoading}
+            >
+              <option value="">Select…</option>
+              {groupedPositions.map(([line, list]) => (
+                <optgroup key={line} label={line}>
+                  {list.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <FieldError messages={errors["primary_position"]} />
+          </div>
+
+          {/* Jersey number */}
+          <div>
+            <Label>Jersey number</Label>
+            <Input
+              type="number"
+              placeholder="e.g., 10"
+              value={membership.jerseyNumber}
+              onChange={(e) =>
+                setMembership((m) => ({
+                  ...m,
+                  jerseyNumber: e.target.value === "" ? "" : Number(e.target.value),
+                }))
+              }
+            />
+            <FieldError messages={errors["jersey_number"]} />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={() => saveMembership()}
+            disabled={savingMembership || !membership.teamId}
+          >
+            {savingMembership ? "Saving…" : "Update membership"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              setMembership({ teamId: "", primaryPositionId: "", jerseyNumber: "" })
+            }
+          >
+            Reset
+          </Button>
         </div>
       </Card>
     </Page>

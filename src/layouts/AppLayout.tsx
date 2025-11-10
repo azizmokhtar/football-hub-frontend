@@ -57,7 +57,7 @@ const AppSidebar = () => {
         {!isAdmin && <SidebarLink to="/app/team" label="My Team" />}
         {!isAdmin && <SidebarLink to="/app/lineup" label="Lineup Builder" />}
 
-        <SidebarLink to="/app/profile" label="Profile" />
+        {!isAdmin && <SidebarLink to="/app/profile" label="Profile" />}
         {isAdmin && (
           <>
             <div className="my-3 h-px bg-gray-700" />

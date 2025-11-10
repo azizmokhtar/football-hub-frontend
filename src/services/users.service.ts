@@ -1,8 +1,8 @@
+// src/services/users.service.ts
 import api from "@/lib/axios";
 import type { CustomUser } from "@/types";
 import { z } from "zod";
 
-// (re)use your register schema shape, but keep it local here too
 export const AdminCreateUserSchema = z.object({
   email: z.string().email(),
   first_name: z.string().min(1),
@@ -21,16 +21,13 @@ export const usersService = {
     return Array.isArray(data) ? data : data.results ?? [];
   },
 
-  // allows filtering roles server-side if available
   async adminListAllWithRole(q: string | undefined, roles: string[]): Promise<CustomUser[]> {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
-    roles.forEach(r => params.append("role", r)); // repeatable parameter
-    const qs = params.toString();
-    const { data } = await api.get(`/users/admin/list/${qs ? `?${qs}` : ""}`);
+    roles.forEach(r => params.append("role", r));
+    const { data } = await api.get(`/users/admin/list/${params.toString() ? `?${params}` : ""}`);
     return Array.isArray(data) ? data : data.results ?? [];
   },
-
 
   async createUser(payload: AdminCreateUserPayload): Promise<CustomUser> {
     const { data } = await api.post("/users/auth/register/", payload);
@@ -42,7 +39,9 @@ export const usersService = {
     return data;
   },
 
-  async updateUser(id: number, patch: Partial<CustomUser> & { team?: number | null }): Promise<CustomUser> {
+  async updateUser(id: number, patch: Partial<Pick<CustomUser,
+    'first_name' | 'last_name' | 'profile_picture'
+  >>): Promise<CustomUser> {
     const { data } = await api.patch(`/users/${id}/`, patch);
     return data;
   },
@@ -51,3 +50,4 @@ export const usersService = {
     await api.delete(`/users/${id}/`);
   },
 };
+

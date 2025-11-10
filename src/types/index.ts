@@ -12,22 +12,15 @@ export interface CustomUser {
   first_name: string;
   last_name: string;
   role: UserRole;
-  team: number | null; // ID of the team
-  team_name: string | null;
-  date_of_birth: string | null; // ISO date string
-  jersey_number: number | null;
-  position: UserPosition | null;
-  profile_picture: string | null; // URL to the image
+  profile_picture: string | null; // URL
 }
 
-// From UserLoginView
 export interface AuthResponse {
   access: string;
   refresh: string;
   user: CustomUser;
 }
 
-// For UserTeamListSerializer
 export interface TeamMember {
   id: number;
   email: string;
@@ -70,7 +63,7 @@ export interface TeamStaff {
   id: number;
   name: string;
   staff: TeamMember[];
-
+}
 // ===================
 // DOCUMENTS
 // ===================
@@ -163,4 +156,24 @@ export interface Attendance {
   reported_by: number | null;
   reported_by_name: string;
   timestamp: string;
+}
+
+export interface Position {
+  id: number;
+  key: string;
+  name: string;
+  line: UserPosition;
+}
+
+export interface Specialty {
+  id: number;
+  key: string;
+  name: string;
+}
+
+export interface License {
+  id: number;
+  key: string;
+  name: string;
+  issuer: string | null;
 }

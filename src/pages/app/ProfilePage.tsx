@@ -12,9 +12,7 @@ export default function ProfilePage() {
   const { setUser } = useAuthActions();
   const [firstName, setFirstName] = useState(user?.first_name ?? "");
   const [lastName, setLastName] = useState(user?.last_name ?? "");
-  const [jersey, setJersey] = useState(user?.jersey_number ?? undefined);
   const [dob, setDob] = useState(user?.date_of_birth ?? "");
-  const [position, setPosition] = useState(user?.position ?? "");
 
   // Password change (your API uses PUT /users/auth/password/change/ with {password})
   const [newPwd, setNewPwd] = useState("");
@@ -22,13 +20,11 @@ export default function ProfilePage() {
 
   const { mutate: saveProfile, isPending: savingProfile } = useMutation({
     mutationFn: async () => {
-      // Only editable fields: first_name, last_name, date_of_birth, jersey_number, position, profile_picture (not included here)
+      // Editable here: first_name, last_name, date_of_birth (membership fields are NOT updated here)
       const updated = await (await import("@/lib/axios")).default.put(`/users/${user!.id}/`, {
         first_name: firstName,
         last_name: lastName,
-        date_of_birth: dob || null,
-        jersey_number: jersey ?? null,
-        position: position || null,
+        date_of_birth: dob || null
       });
       return updated.data;
     },
@@ -77,15 +73,6 @@ export default function ProfilePage() {
             <div>
               <Label htmlFor="dob">Date of birth</Label>
               <Input id="dob" type="date" value={dob ?? ""} onChange={(e) => setDob(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="jersey">Jersey number</Label>
-              <Input
-                id="jersey"
-                type="number"
-                value={jersey ?? ""}
-                onChange={(e) => setJersey(e.target.value ? Number(e.target.value) : undefined)}
-              />
             </div>
             <div>
               <Label htmlFor="pos">Position</Label>

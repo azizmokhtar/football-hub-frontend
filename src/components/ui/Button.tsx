@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600/90 disabled:opacity-50',
+          'inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-black shadow-sm hover:bg-blue-600/90 disabled:opacity-50',
 
         destructive:
           'inline-flex items-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-200 disabled:opacity-50',
@@ -21,7 +21,7 @@ const buttonVariants = cva(
           'inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-200 disabled:opacity-50',
 
         ghost:
-          'inline-flex items-center rounded-md bg-transparent px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 shadow-none disabled:opacity-50',
+          'inline-flex items-center rounded-md bg-transparent px-3 py-2 text-sm  font-medium text-gray-900 hover:bg-gray-100 shadow-none disabled:opacity-50',
       },
       size: {
         default: 'h-10 px-4 py-2',
